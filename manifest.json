@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "고양이 걸어다니기",
+  "version": "1.0",
+  "description": "크롬 화면 위에 고양이가 걸어다닙니다.",
+  "permissions": ["activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["character.js", "content.js"]
+    }
+  ],
+  "icons": {
+    "16": "cat16.png",
+    "48": "cat48.png",
+    "128": "cat128.png"
+  },
+  "host_permissions": ["<all_urls>"],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "/fox/red_run_8fps.gif",
+        "/fox/red_swipe_8fps.gif",
+        "/fox/red_lie_8fps.gif",
+        "fox/red_walk_8fps.gif",
+        "fox/red_idle_8fps.gif"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
