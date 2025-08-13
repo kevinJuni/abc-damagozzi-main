@@ -29,7 +29,7 @@ class Character {
   timers = new Set();
 
   animationId = null;
-
+  parentNode;
   constructor(imageUrl) {
     this.img.src = chrome.runtime.getURL(this.imageUrlObj["walk"]);
     this.img.style.position = "fixed";
@@ -38,8 +38,9 @@ class Character {
     this.img.style.width = "35px";
     this.img.style.height = "35px";
     this.img.style.zIndex = "9999";
+    this.img.draggable = true;
     document.body.appendChild(this.img);
-
+    this.parentNode = document.body;
     this.startMoving();
     this.setupBodyEventListeners();
     this.setupImageEventListeners();
@@ -90,7 +91,7 @@ class Character {
       (this.state === "followMouse" || this.state === "run") &&
       this.targetPosition !== null
     ) {
-      const distance = Math.abs(this.position - this.targetPosition);
+      let distance = Math.abs(this.position - this.targetPosition);
       if (distance <= this.speed) {
         this.setState("idle");
         this.targetPosition = null;
@@ -101,7 +102,23 @@ class Character {
             this.setState("walk");
           }
         }, 3000);
+        this.animationId = requestAnimationFrame(this.move.bind(this));
+        return;
+      }
+      distance =
+        this.direction < 0
+          ? Math.abs(this.leftEdge - this.position)
+          : Math.abs(this.position - (this.rightEdge - 35));
+      if (this.parentNode !== document.body && distance < this.speed) {
+        this.setState("idle");
+        this.targetPosition = null;
 
+        this.addTimer(() => {
+          if (this.state === "idle") {
+            // this.rightEdge = window.innerWidth;
+            this.setState("walk");
+          }
+        }, 3000);
         this.animationId = requestAnimationFrame(this.move.bind(this));
         return;
       }
@@ -129,8 +146,6 @@ class Character {
   }
 
   turnAtEdge() {
-    if (this.state === "followMouse") return;
-
     if (this.position >= this.rightEdge - 35) {
       this.reverse(-1);
     }
@@ -159,26 +174,40 @@ class Character {
       this.followMouseToPosition(e.clientX, "followMouse");
     });
     document.addEventListener("dragenter", (e) => {
-      console.log(e.target);
+      // this.img.style
       // dropTarget = e.target; // 지금 마우스가 들어간 요소
     });
-  }
 
-  setupImageEventListeners() {
     this.img.addEventListener("drag", (e) => {
       // console.log(e);
     });
     this.img.addEventListener("dragend", (e) => {
-      console.log(e);
+      const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+      this.parentNode = elementBelow;
+      if (elementBelow) {
+        const rect = elementBelow.getBoundingClientRect();
+        this.leftEdge = rect.left;
+        this.rightEdge = rect.right;
+
+        this.position = e.clientX;
+        this.img.style.left = this.position + "px";
+        this.img.style.bottom = window.innerHeight - rect.bottom + "px";
+      }
+
+      // 이동 애니메이션 재시작
+      this.startMoving();
     });
   }
+
+  setupImageEventListeners() {}
   // 마우스 따라가는 함수...
   followMouseToPosition(clickX, state) {
     this.clearAllTimers();
     this.setState(state);
     this.targetPosition = clickX;
+    let edge = clickX > this.rightEdge ? this.rightEdge : clickX;
     // 마우스 위치에따라 여우 뒤돌기 안돌기...
-    if (this.position < clickX) {
+    if (this.position < edge) {
       this.reverse(1);
     } else {
       this.reverse(-1);
